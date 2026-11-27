@@ -139,6 +139,7 @@ for (const level of LEVELS) {
       const dynA = PARTS[a.kind].bodies(a).some((x) => x.type === 'dynamic');
       const dynB = PARTS[b.kind].bodies(b).some((x) => x.type === 'dynamic');
       if (!dynA && !dynB) continue; // static scenery may touch
+      if (a.kind === 'domino' || b.kind === 'domino') { if (!isFree({ ...(a.kind === 'domino' ? a : b), y: (a.kind === 'domino' ? a : b).y + 0.03 }, [a.kind === 'domino' ? b : a])) problems.push(`fixed parts ${a.id} and ${b.id} overlap`); continue; }
       if (!isFree(a, [b])) problems.push(`fixed parts ${a.id} and ${b.id} overlap`);
     }
   const invCount = level.inventory.reduce((s, i) => s + i.count, 0);

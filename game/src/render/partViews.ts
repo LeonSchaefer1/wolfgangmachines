@@ -351,22 +351,20 @@ const MAKERS: Record<string, Make> = {
 
   button(v) {
     const b = new Builder();
-    b.add('metal', rbox(1.0, 0.2, DZ, 0.04), 0x56616f, [0, -0.1, 0]);
-    b.add('gloss', new THREE.BoxGeometry(0.9, 0.05, 0.02), 0xf4c21e, [0, -0.1, DZ / 2 + 0.005]);
-    b.add('metal', cyl(0.36, 0.36, 0.04, 22), 0x2c333c, [0, 0.01, 0]);
+    b.add('metal', rbox(0.9, 0.16, DZ, 0.03), 0x56616f, [0, -0.12, 0]);
+    for (let i = 0; i < 5; i++) b.add('gloss', new THREE.BoxGeometry(0.09, 0.1, 0.02), i % 2 ? 0x23272d : 0xf4c21e, [-0.36 + i * 0.18, -0.12, DZ / 2 + 0.005], [0, 0, -0.5]);
     b.build(v.root);
     const cap = new THREE.Group();
     v.root.add(cap);
     const cb = new Builder();
-    cb.add('gloss', cyl(0.3, 0.31, 0.12, 22), 0xd9272e, [0, 0, 0]);
-    cb.add('gloss', sph(0.3, 22, 10), 0xe5393b, [0, 0.05, 0], [0, 0, 0], [1, 0.22, 1]);
+    cb.add('gloss', rbox(1.0, 0.2, DZ - 0.04, 0.085, 3), 0xdf2f2f, [0, 0, 0]);
+    cb.add('gloss', rbox(0.7, 0.04, DZ - 0.2, 0.02), 0xf2574d, [0, 0.09, 0]);
     cb.build(cap);
+    cap.position.y = 0.06;
     v.anim = (f, view) => {
       const down = f.running && view.rt?.pressed;
-      const target = down ? 0.0 : 0.09;
-      cap.position.y += (target - cap.position.y) * (1 - Math.exp(-f.dt * 30));
+      cap.position.y += ((down ? -0.02 : 0.06) - cap.position.y) * (1 - Math.exp(-f.dt * 30));
     };
-    cap.position.y = 0.09;
   },
 
   lamp(v, _i, A) {

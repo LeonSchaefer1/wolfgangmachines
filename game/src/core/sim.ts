@@ -4,6 +4,7 @@ import { FAN_REACH, FAN_WIDTH, PARTS, SEESAW_TILT, type FixSpec, type PartDef } 
 import { FIELD_H, FIELD_W, GRAVITY, type Goal, type Mat, type PartInst, type SimEvent } from './types';
 
 export const DT = 1 / 60;
+const SUBSTEPS = 2;
 const DEG = Math.PI / 180;
 const BELT_SPEED = 2.4;
 const WIND_K = 0.62;
@@ -172,6 +173,8 @@ export class Sim {
     }
     // a bucket swallows the bounce of whatever falls into it
     if (da.mat === 'bucket' || db.mat === 'bucket') c.setRestitution(0.05);
+    // things laid on a seesaw stay put instead of dribbling
+    if (da.tag === 'damp' || db.tag === 'damp') c.setRestitution(0);
     this.special(da, db, bb, vn, px, py);
     this.special(db, da, ba, vn, px, py);
     if (vn > 0.9) {
@@ -206,7 +209,7 @@ export class Sim {
       this.events.push({ t: 'boing', id: rt.inst.id, x, y, v: vn });
     }
     if (me.tag === 'bell' && vn > 1.0 && otherBody.isDynamic()) this.ring(rt, vn);
-    if (rt.inst.kind === 'rocket' && rt.phase === 2 && this.time - rt.t0 > 0.12 && !this.toExplode.includes(rt)) this.toExplode.push(rt);
+    if (rt.inst.kind === 'rocket' && rt.phase === 2 && this.time - rt.t0 > 0.3 && !this.toExplode.includes(rt)) this.toExplode.push(rt);
   }
 
   private ring(rt: PartRT, v: number) {
@@ -245,8 +248,11 @@ export class Sim {
       rt.py = rt.y;
       rt.pa = rt.a;
     }
-    this.applyForces();
-    this.world.step(DT, 8, 3);
+    // two physics sub-steps per tick: fast impacts (seesaw, dominoes) transfer their energy much more faithfully
+    for (let i = 0; i < SUBSTEPS; i++) {
+      this.applyForces();
+      this.world.step(DT / SUBSTEPS, 8, 3);
+    }
     this.time += DT;
     this.ticks++;
 

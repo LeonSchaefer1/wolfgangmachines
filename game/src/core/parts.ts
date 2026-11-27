@@ -9,7 +9,7 @@ export interface FixSpec {
   restitution: number;
   mat: Mat;
   /** special role of this fixture */
-  tag?: 'sharp' | 'cap' | 'mat' | 'belt' | 'bell';
+  tag?: 'sharp' | 'cap' | 'mat' | 'belt' | 'bell' | 'damp';
 }
 
 export interface BodySpec {
@@ -160,7 +160,7 @@ export const PARTS: Record<PartKind, PartDef> = {
     hh: BALLOON_R * 1.15,
     wind: 1.5,
     bodies: () => [
-      dyn([fx(new Circle(BALLOON_R), 'soft', 0.12, 0.3, 0.3)], { gravityScale: -0.3, linearDamping: 1.6, angularDamping: 3 }),
+      dyn([fx(new Circle(BALLOON_R), 'soft', 0.12, 0.3, 0.3)], { gravityScale: -0.42, linearDamping: 1.5, angularDamping: 3 }),
     ],
   },
   cactus: {
@@ -187,8 +187,9 @@ export const PARTS: Record<PartKind, PartDef> = {
     wind: 0,
     bodies: () => [
       stat([
-        fx(box(1.0, 0.2, 0, -0.1), 'metal', 0, 0.5, 0.05),
-        fx(box(0.62, 0.16, 0, 0.08), 'wood', 0, 0.5, 0.05, 'cap'),
+        fx(box(0.9, 0.16, 0, -0.12), 'metal', 0, 0.5, 0.05),
+        // the red plate overhangs the base, so anything rolling into the switch from the side presses it too
+        fx(box(1.0, 0.2, 0, 0.06), 'wood', 0, 0.5, 0.05, 'cap'),
       ]),
     ],
   },
@@ -245,7 +246,7 @@ export const PARTS: Record<PartKind, PartDef> = {
           la: tilt,
           angularDamping: 0.4,
           fixtures: [
-            fx(box(SEESAW_L, 0.14), 'wood', 0.5, 0.7, 0.02),
+            fx(box(SEESAW_L, 0.14), 'wood', 0.5, 0.7, 0.02, 'damp'),
             fx(box(0.1, 0.26, -hl + 0.05, 0.16), 'wood', 0.5, 0.5, 0.02),
             fx(box(0.1, 0.26, hl - 0.05, 0.16), 'wood', 0.5, 0.5, 0.02),
           ],
