@@ -9,6 +9,8 @@ OUT=emulator-screens
 mkdir -p "$OUT"
 
 adb install -r "$APK"
+# stock Android shows a one-time "Viewing full screen" hint that would swallow the first taps
+adb shell settings put secure immersive_mode_confirmations confirmed
 adb logcat -c || true
 adb shell am start -W -n "$PKG/.MainActivity"
 sleep 30
