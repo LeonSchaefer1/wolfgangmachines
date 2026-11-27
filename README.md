@@ -55,3 +55,26 @@ node scripts/build-single-html.mjs
 - Fester Physik-Takt (60 Hz, zwei Teilschritte), Darstellung auf 60 Bilder/s begrenzt, im Bau-Modus 30 Bilder/s (schont Akku).
 - Wenige Materialien, zusammengefasste Geometrie, eine Schattenlichtquelle.
 - Automatische Qualitätsanpassung: hält das Gerät die Bildrate nicht, werden Auflösung und Schatten stufenweise reduziert.
+
+## Test im Android-Emulator
+
+```bash
+scripts/emulator-test.sh boot
+```
+
+```bash
+scripts/emulator-test.sh install release/WolfgangsTueftelwerkstatt-debug.apk && scripts/emulator-test.sh launch
+```
+
+Mit Hardware-Beschleunigung (KVM) läuft das direkt. In einer Umgebung **ohne KVM** (reine CPU-Emulation) gilt:
+
+- Das API-34-Abbild (WebView 113) und das API-35-Abbild (WebView 124) beenden den WebView-Renderer bei **jeder**
+  Webseite: Die emulierte CPU berechnet die SSSE3-Adler-32-Prüfsumme falsch, worauf die Start-Selbstprüfung der
+  JavaScript-Engine fehlschlägt. Umgehung nur für den Test: Emulator mit `EMU_EXTRA_ARGS=-writable-system` starten,
+  `adb root && adb remount`, und im WebView-Paket des Emulators den einen Sprungbefehl dieser Prüfung durch NOPs ersetzen.
+- Die Bildschirmausgabe des Emulators bleibt dort schwarz (auch System-Overlays). Getestet wird deshalb über die
+  DevTools-Schnittstelle des Debug-APK: `scripts/emulator-test.sh devtools`, dann `node game/tests/cdp-play.cjs <ordner>`
+  (schickt echte Touch-Ereignisse in den WebView, spielt Level 1 durch und speichert Bilder aus dem Spiel).
+  Ergebnis des letzten Laufs: `docs/emulator-test-level1.png`.
+- Ohne Grafikchip schaltet das Spiel automatisch in einen sparsamen Modus (kleine Auflösung, keine Schatten).
+  Auf einem echten Telefon ist dieser Modus nie aktiv.
