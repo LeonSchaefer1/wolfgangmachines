@@ -355,7 +355,7 @@ export class UI {
 
   // ------------------------------------------------------------- dialogs
 
-  dialog(opts: { sub?: string; title: string; text?: string; stars?: number; buttons: DialogButton[]; column?: boolean; extra?: HTMLElement; light?: boolean; fieldOnly?: boolean }) {
+  dialog(opts: { sub?: string; title: string; text?: string; stars?: number; buttons: DialogButton[]; column?: boolean; extra?: HTMLElement; note?: string; light?: boolean; fieldOnly?: boolean }) {
     this.closeDialog();
     const ov = el('div', 'overlay' + (opts.light ? ' light' : ''));
     if (opts.fieldOnly) ov.style.right = 'calc(var(--tray-w) + var(--inset-r))';
@@ -376,6 +376,7 @@ export class UI {
     }
     card.append(row);
     if (opts.extra) card.append(opts.extra);
+    if (opts.note) card.append(el('div', 'note', opts.note));
     ov.append(card);
     ov.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.root.append(ov);

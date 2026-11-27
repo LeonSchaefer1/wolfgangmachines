@@ -9,6 +9,7 @@ import { Cable, Fx } from './render/fx';
 import { partIcon } from './render/icons';
 import { createPartView, type Frame, type PartView } from './render/partViews';
 import type { Quality, Stage } from './render/stage';
+import { gpuName } from './render/gfx';
 import { highestUnlocked, persist, save } from './save';
 import { UI } from './ui/ui';
 
@@ -80,6 +81,8 @@ export class Game {
   private busyUntil = 0;
   /** software rendering only: pause between frames so the rest of the system gets CPU time */
   private restUntil = 0;
+  /** smoothed frame rate while a machine runs, shown in the pause menu for diagnostics */
+  private fps = 0;
   private idleSince = 0;
   /** the 'pull a part out of the box' hand is showing */
   private nudging = false;
@@ -596,7 +599,16 @@ export class Game {
         { label: 'Andere Maschine wählen', icon: 'grid', onClick: () => this.toMenu(true) },
       ],
       extra: this.ui.settingsRow(),
+      note: this.techInfo(),
     });
+  }
+
+  /** one small line for the curious (and for checking smoothness on the real phone) */
+  private techInfo(): string {
+    const q = this.stage.safe ? 'Sparmodus' : ['niedrig', 'mittel', 'hoch'][this.stage.quality];
+    const gpu = gpuName().replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 42);
+    const fps = this.fps ? `${Math.round(this.fps)} Bilder/s beim letzten Lauf · ` : '';
+    return `${fps}Grafik: ${q}${gpu ? ' · ' + gpu : ''}`;
   }
 
   toMenu(levels = false) {
@@ -805,6 +817,7 @@ export class Game {
       if (this.mode === 'menu') {
         if (this.sim.time > (this.sim.success ? this.sim.successTime + 3.5 : 16)) this.startDemo();
       } else {
+        this.fps += (1 / dt - this.fps) * (this.fps ? 0.05 : 1);
         this.runEffects(dt);
         if (this.wonAt > 0 && !this.winShown && now - this.wonAt > 0.9) this.win();
         this.guardPerformance(dt);

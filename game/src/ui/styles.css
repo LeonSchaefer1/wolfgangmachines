@@ -857,3 +857,10 @@ body {
     animation: none;
   }
 }
+
+.card .note {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8a6f4d;
+}
