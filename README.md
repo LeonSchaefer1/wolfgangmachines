@@ -62,6 +62,13 @@ node scripts/build-single-html.mjs
 
 ## Test im Android-Emulator
 
+**Empfohlen: GitHub Actions** (`.github/workflows/android.yml`). Bei jedem Push prüft der Lauf alle Level, baut die
+signierte APK und spielt Level 1 in einem Emulator **mit Hardware-Beschleunigung** durch – mit normalen Tipp- und
+Wischgesten (`scripts/ci-emulator-smoke.sh`). APK und Bildschirmfotos hängen als Downloads am Lauf.
+Letztes Ergebnis: `docs/emulator-github-level1.png` (Android 14, Pixel-6-Profil, unveränderte Release-APK).
+
+Lokal:
+
 Mit Hardware-Beschleunigung (KVM) genügt:
 
 ```bash
