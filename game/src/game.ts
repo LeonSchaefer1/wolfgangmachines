@@ -330,7 +330,8 @@ export class Game {
   /** when the solution is shown, a part dropped near its outline snaps exactly into it */
   private snapToGhost(inst: PartInst): boolean {
     let best: PartView | null = null;
-    let bd = 0.9;
+    // generous: the part floats above the finger, and many people point at the outline with the finger itself
+    let bd = 1.45;
     for (const g of this.ghosts) {
       const gi = g.inst;
       if (gi.kind !== inst.kind || (gi.len ?? 0) !== (inst.len ?? 0)) continue;
