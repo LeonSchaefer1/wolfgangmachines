@@ -83,6 +83,7 @@ export class Game {
   private restUntil = 0;
   /** smoothed frame rate while a machine runs, shown in the pause menu for diagnostics */
   private fps = 0;
+  private worstFrame = 0;
   private idleSince = 0;
   /** the 'pull a part out of the box' hand is showing */
   private nudging = false;
@@ -248,6 +249,8 @@ export class Game {
     this.wonAt = -1;
     this.winShown = false;
     this.runFrames = 0;
+    this.worstFrame = 0;
+    this.fps = 0;
     this.ui.setRunning(true);
     this.ui.pulseStart(false);
     this.ui.pulseHint(false);
@@ -608,7 +611,7 @@ export class Game {
   private techInfo(): string {
     const q = this.stage.safe ? 'Sparmodus' : ['niedrig', 'mittel', 'hoch'][this.stage.quality];
     const gpu = gpuName().replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 42);
-    const fps = this.fps ? `${Math.round(this.fps)} Bilder/s beim letzten Lauf · ` : '';
+    const fps = this.fps ? `${Math.round(this.fps)} Bilder/s beim letzten Lauf (längstes Bild ${Math.round(this.worstFrame * 1000)} ms) · ` : '';
     return `${fps}Grafik: ${q}${gpu ? ' · ' + gpu : ''}`;
   }
 
@@ -817,6 +820,8 @@ export class Game {
       f.simTime = this.sim.time - (1 - f.alpha) * DT;
       if (this.mode === 'menu') {
         if (this.sim.time > (this.sim.success ? this.sim.successTime + 3.5 : 16)) this.startDemo();
+        // the title-screen machine doubles as a warm-up: the graphics tier is settled before the first level starts
+        this.guardPerformance(dt);
       } else {
         this.fps += (1 / dt - this.fps) * (this.fps ? 0.05 : 1);
         this.runEffects(dt);
@@ -884,6 +889,7 @@ export class Game {
   private guardPerformance(dt: number) {
     this.runFrames++;
     if (this.runFrames < 45) return;
+    this.worstFrame = Math.max(this.worstFrame * 0.995, dt);
     this.frameEma += (dt - this.frameEma) * 0.05;
     if (this.frameEma > 1 / 48) this.slowFrames++;
     else this.slowFrames = Math.max(0, this.slowFrames - 1);
