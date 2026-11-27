@@ -37,6 +37,11 @@ function boot() {
     document.documentElement.style.setProperty('--cut-r', Math.max(0, right) + 'px');
     relayout();
   };
+  try {
+    (window as any).AndroidBridge?.requestInsets?.();
+  } catch {
+    /* not running inside the Android shell */
+  }
 
   canvas.addEventListener('webglcontextlost', (e) => e.preventDefault());
   canvas.addEventListener('webglcontextrestored', () => location.reload());

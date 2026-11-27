@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { isSafeGfx } from './gfx';
 import * as T from './textures';
 
 export type MatKey = 'matte' | 'gloss' | 'metal' | 'brass' | 'wood' | 'woodLight';
@@ -28,7 +29,9 @@ let cached: Assets | null = null;
 
 export function getAssets(): Assets {
   if (cached) return cached;
-  const std = (p: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(p);
+  // without a GPU there is no environment map: metals are rendered as plain painted surfaces instead
+  const lo = isSafeGfx();
+  const std = (p: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(lo && p.metalness ? { ...p, metalness: 0.15, roughness: 0.6 } : p);
   cached = {
     mats: {
       matte: std({ vertexColors: true, roughness: 0.86, metalness: 0 }),

@@ -1,0 +1,26 @@
+# Gradle / Android build outputs
+.gradle/
+build/
+app/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+*.log
+# Web assets are copied in by scripts/build-apk.sh (from game/dist or webview-test/)
+app/src/main/assets/www/
+# IDE
+.idea/
+*.iml
+.kotlin/
+# NOTE: signing/release.jks is committed ON PURPOSE (private family app; the
+# same key is needed to update the installed app). Do not ignore it.
+!signing/
+!signing/release.jks
+# The Gradle wrapper jar must be committed as well.
+!gradle/wrapper/gradle-wrapper.jar

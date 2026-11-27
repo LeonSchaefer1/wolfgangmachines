@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>WebView-Test</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #101418; overflow: hidden;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #info { position: fixed; left: 10px; top: 8px; right: 10px; color: #e8f0e0;
+    font: 13px/1.35 monospace; white-space: pre-wrap; word-break: break-all;
+    text-shadow: 0 0 3px #000, 0 0 3px #000; pointer-events: none; }
+  #taps { position: fixed; right: 10px; bottom: 8px; color: #ffd24a; font: 14px monospace;
+    text-shadow: 0 0 3px #000; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info">Lade ...</div>
+<div id="taps"></div>
+<script>
+// WebView diagnostic page. Package it instead of the game with:
+//   scripts/build-apk.sh --test-page
+// Verifies: WebGL2, rAF frame rate, viewport, localStorage, AudioContext, JS bridge.
+(function () {
+  'use strict';
+  var info = document.getElementById('info');
+  var tapsEl = document.getElementById('taps');
+  var canvas = document.getElementById('c');
+  var lines = {};
+  function render() {
+    info.textContent = Object.keys(lines).map(function (k) { return k + ': ' + lines[k]; }).join('\n');
+  }
+  function set(k, v) { lines[k] = v; render(); }
+
+  set('UA', navigator.userAgent);
+
+  // --- localStorage (with a launch counter to prove persistence across restarts)
+  try {
+    var n = parseInt(localStorage.getItem('wt_launches') || '0', 10) + 1;
+    localStorage.setItem('wt_launches', String(n));
+    set('localStorage', 'yes (launch #' + n + ')');
+  } catch (e) { set('localStorage', 'NO: ' + e); }
+
+  // --- AudioContext
+  var actx = null;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    actx = new AC();
+    set('AudioContext', 'yes, state=' + actx.state + ', sampleRate=' + actx.sampleRate);
+    actx.onstatechange = function () {
+      set('AudioContext', 'yes, state=' + actx.state + ', sampleRate=' + actx.sampleRate);
+    };
+  } catch (e) { set('AudioContext', 'NO: ' + e); }
+
+  // --- Bridge
+  try {
+    set('AndroidBridge', window.AndroidBridge ? 'yes, appVersion=' + AndroidBridge.getAppVersion() : 'no (plain browser)');
+  } catch (e) { set('AndroidBridge', 'ERROR: ' + e); }
+
+  // --- ES2020 smoke test
+  try {
+    var ok = new Function('var a={b:null}; return (a?.b ?? 7) === 7 && typeof 10n === "bigint" && typeof Promise.allSettled === "function" && typeof globalThis === "object";')();
+    set('ES2020', ok ? 'yes' : 'NO');
+  } catch (e) { set('ES2020', 'NO: ' + e); }
+
+  // --- WebGL2
+  var gl = null;
+  try { gl = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' }); } catch (e) {}
+  if (!gl) {
+    var gl1 = null;
+    try { gl1 = canvas.getContext('webgl'); } catch (e) {}
+    set('WebGL2', 'NO' + (gl1 ? ' (WebGL1 only)' : ' (no WebGL at all)'));
+  } else {
+    var dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    var renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    var vendor = dbg ? gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR);
+    set('WebGL2', 'yes - ' + gl.getParameter(gl.VERSION));
+    set('Renderer', vendor + ' / ' + renderer);
+    set('MaxTex', gl.getParameter(gl.MAX_TEXTURE_SIZE) + ', MSAA max ' + gl.getParameter(gl.MAX_SAMPLES));
+  }
+  console.log('[webview-test] WebGL2=' + (gl ? 'yes' : 'no') + ' renderer=' + (lines.Renderer || '-'));
+  console.log('[webview-test] UA=' + navigator.userAgent);
+
+  function resize() {
+    var dpr = window.devicePixelRatio || 1;
+    var w = Math.round(window.innerWidth * dpr), h = Math.round(window.innerHeight * dpr);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    set('Viewport', window.innerWidth + ' x ' + window.innerHeight + ' css px, dpr=' + dpr +
+      ', canvas ' + canvas.width + 'x' + canvas.height + ', screen ' + screen.width + 'x' + screen.height);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var prog = null, uAngle = null, uAspect = null;
+  if (gl) {
+    var vs = '#version 300 es\n' +
+      'in vec2 aPos; in vec3 aCol; uniform float uAngle; uniform float uAspect; out vec3 vCol;\n' +
+      'void main(){ float c=cos(uAngle), s=sin(uAngle); vec2 p=vec2(aPos.x*c-aPos.y*s, aPos.x*s+aPos.y*c);\n' +
+      '  p.x/=uAspect; vCol=aCol; gl_Position=vec4(p,0.0,1.0); }';
+    var fs = '#version 300 es\nprecision mediump float; in vec3 vCol; out vec4 o; void main(){ o=vec4(vCol,1.0); }';
+    var compile = function (type, src) {
+      var sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+      return sh;
+    };
+    try {
+      prog = gl.createProgram();
+      gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+      var vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+      var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+         0.0,  0.75, 1.0, 0.2, 0.2,
+        -0.65, -0.4, 0.2, 1.0, 0.3,
+         0.65, -0.4, 0.2, 0.4, 1.0]), gl.STATIC_DRAW);
+      var aPos = gl.getAttribLocation(prog, 'aPos'), aCol = gl.getAttribLocation(prog, 'aCol');
+      gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 20, 0);
+      gl.enableVertexAttribArray(aCol); gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 20, 8);
+      uAngle = gl.getUniformLocation(prog, 'uAngle'); uAspect = gl.getUniformLocation(prog, 'uAspect');
+    } catch (e) { set('Shader', 'ERROR: ' + e.message); prog = null; }
+  }
+
+  var frames = 0, last = performance.now(), total = 0, t0 = last, fpsLogged = 0;
+  function frame(now) {
+    frames++; total++;
+    if (now - last >= 1000) {
+      var fps = frames * 1000 / (now - last);
+      set('FPS', fps.toFixed(1) + '  (avg ' + (total * 1000 / (now - t0)).toFixed(1) + ' since start, frame #' + total + ')');
+      if (fpsLogged++ % 5 === 0) console.log('[webview-test] FPS=' + fps.toFixed(1));
+      frames = 0; last = now;
+    }
+    if (gl && prog) {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0.06, 0.08, 0.10, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(prog);
+      gl.uniform1f(uAngle, now / 1000);
+      gl.uniform1f(uAspect, canvas.width / canvas.height);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // --- input + hooks
+  var taps = 0, backs = 0;
+  window.addEventListener('pointerdown', function (e) {
+    taps++;
+    tapsEl.textContent = 'tap #' + taps + ' @ ' + Math.round(e.clientX) + ',' + Math.round(e.clientY);
+    console.log('[webview-test] tap ' + Math.round(e.clientX) + ',' + Math.round(e.clientY));
+    if (actx && actx.state === 'suspended') actx.resume();
+    if (actx && actx.state !== 'closed') {       // short beep
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = 660; g.gain.value = 0.1; o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + 0.08);
+    }
+    if (window.AndroidBridge) AndroidBridge.vibrate(20);
+  });
+  // First back press is "handled" by the page, the second one leaves the app.
+  window.onAndroidBack = function () {
+    backs++;
+    set('Back', 'pressed ' + backs + 'x (odd presses are consumed by the page)');
+    console.log('[webview-test] onAndroidBack #' + backs);
+    return backs % 2 === 1;
+  };
+  window.onAppPause = function () { console.log('[webview-test] onAppPause'); set('Lifecycle', 'paused at ' + new Date().toLocaleTimeString()); };
+  window.onAppResume = function () { console.log('[webview-test] onAppResume'); set('Lifecycle', 'resumed at ' + new Date().toLocaleTimeString()); };
+})();
+</script>
+</body>
+</html>

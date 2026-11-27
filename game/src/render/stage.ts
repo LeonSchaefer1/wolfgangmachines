@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { FIELD_H, FIELD_W } from '../core/types';
 import { Builder, getAssets, rbox, scaleU } from './assets';
+import { isSafeGfx } from './gfx';
 import { PLANE_Z } from './partViews';
 
 export type Quality = 0 | 1 | 2; // low, medium, high
@@ -24,28 +25,32 @@ export class Stage {
   private vh = 1;
   quality: Quality = 2;
   shadowsDirty = true;
+  /** software rendering (no GPU): tiny resolution, no shadows, no reflections */
+  safe = isSafeGfx();
 
   constructor(canvas: HTMLCanvasElement, quality: Quality) {
     this.quality = quality;
-    const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false }));
+    const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.safe, alpha: false, powerPreference: 'high-performance', stencil: false }));
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.NeutralToneMapping;
     r.toneMappingExposure = 1.05;
-    r.shadowMap.enabled = true;
+    r.shadowMap.enabled = !this.safe;
     r.shadowMap.type = THREE.PCFSoftShadowMap;
     r.shadowMap.autoUpdate = false;
     r.setClearColor(0x3a2616);
 
-    const pmrem = new THREE.PMREMGenerator(r);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.55;
-    pmrem.dispose();
+    if (!this.safe) {
+      const pmrem = new THREE.PMREMGenerator(r);
+      this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      this.scene.environmentIntensity = 0.55;
+      pmrem.dispose();
+    }
 
-    this.scene.add(new THREE.HemisphereLight(0xfff6e6, 0x8f6f4d, 1.25));
+    this.scene.add(new THREE.HemisphereLight(0xfff6e6, 0x8f6f4d, this.safe ? 1.7 : 1.25));
     const sun = (this.sun = new THREE.DirectionalLight(0xfff0d4, 2.4));
     sun.position.set(FIELD_W / 2 - 4.5, FIELD_H / 2 + 7, 13);
     sun.target.position.set(FIELD_W / 2, FIELD_H / 2, 0);
-    sun.castShadow = true;
+    sun.castShadow = !this.safe;
     const sc = sun.shadow.camera;
     sc.left = -8.2;
     sc.right = 8.2;
@@ -123,6 +128,13 @@ export class Stage {
   }
 
   applyQuality() {
+    if (this.safe) {
+      this.renderer.setPixelRatio(Math.min(1, 520 / Math.max(1, this.vw)));
+      this.renderer.setSize(this.vw, this.vh, false);
+      this.renderer.shadowMap.enabled = false;
+      this.sun.castShadow = false;
+      return;
+    }
     const dpr = window.devicePixelRatio || 1;
     const cap = this.quality === 2 ? 2 : this.quality === 1 ? 1.5 : 1.25;
     this.renderer.setPixelRatio(Math.min(dpr, cap));
@@ -140,7 +152,7 @@ export class Stage {
   }
 
   setQuality(q: Quality) {
-    if (q === this.quality) return;
+    if (q === this.quality || this.safe) return;
     this.quality = q;
     this.applyQuality();
     this.scene.traverse((o) => {

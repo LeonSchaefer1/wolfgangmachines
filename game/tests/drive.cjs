@@ -4,13 +4,14 @@ const { chromium } = require('playwright');
 const path = require('node:path');
 (async () => {
   const script = require(path.resolve(process.argv[2]));
-  const url = process.argv[3] || 'http://127.0.0.1:5173/';
+  const url = process.argv[3] || 'http://127.0.0.1:5173/?gfx=full';
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
   const ctx = await browser.newContext({ viewport: { width: 891, height: 411 }, deviceScaleFactor: +(process.env.DPR || 1), hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   page.on('console', (m) => { const t = m.text(); if ((m.type() === 'error' || m.type() === 'warning') && !t.includes('GPU stall')) console.log('[console.' + m.type() + ']', t.slice(0, 400)); });
   page.on('pageerror', (e) => console.log('[pageerror]', String(e).slice(0, 800)));
   await page.goto(url);
+  page.reloadOrig = page.reload.bind(page);
   await page.waitForTimeout(2500);
   const shot = (name) => page.screenshot({ path: `tests/out/${name}.png` });
   const h = {

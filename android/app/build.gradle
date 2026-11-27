@@ -1,0 +1,78 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'de.wolfgang.tueftelwerkstatt'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId 'de.wolfgang.tueftelwerkstatt'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    // Private family app: the keystore and its passwords are committed on
+    // purpose, so that every future build can update the installed app.
+    signingConfigs {
+        release {
+            storeFile rootProject.file('signing/release.jks')
+            storePassword 'wolfgang-werkstatt'
+            keyAlias 'wolfgang'
+            keyPassword 'wolfgang-werkstatt'
+            enableV1Signing true
+            enableV2Signing true
+            enableV3Signing true
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            debuggable false
+        }
+        debug {
+            // Same key as release, so debug and release builds can be
+            // installed over each other (adb install -r) without losing the
+            // localStorage save data.
+            signingConfig signingConfigs.release
+            debuggable true
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    androidResources {
+        // The web game ships already-compressed media; store them uncompressed
+        // so the WebView can stream them straight out of the APK.
+        noCompress += ['ogg', 'mp3', 'm4a', 'png', 'jpg', 'jpeg', 'webp', 'woff2', 'wasm', 'ktx2', 'glb']
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    packaging {
+        resources {
+            excludes += ['META-INF/*.version', 'META-INF/*.kotlin_module', 'kotlin/**', 'DebugProbesKt.bin']
+        }
+    }
+}
+
+dependencies {
+    // Only dependency: WebViewAssetLoader (serves assets/www/ under https://appassets.androidplatform.net/)
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
