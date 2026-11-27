@@ -8,7 +8,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LEVELS, solutionParts } from '../src/core/levels';
+import { DEMO, LEVELS, solutionParts } from '../src/core/levels';
 import { PARTS } from '../src/core/parts';
 import { isFree } from '../src/core/placement';
 import { Sim } from '../src/core/sim';
@@ -125,7 +125,7 @@ function svg(level: Level, placed: PartInst[], res: RunResult): string {
 }
 
 let allOk = true;
-for (const level of LEVELS) {
+for (const level of [...LEVELS, DEMO]) {
   if (only && level.id !== +only) continue;
   const problems: string[] = [];
   // static sanity: fixed parts must not overlap each other, solution parts must be placeable
@@ -146,7 +146,7 @@ for (const level of LEVELS) {
   if (sol.length > invCount) problems.push('solution uses more parts than the inventory offers');
 
   const empty = run(level, [], 30);
-  if (empty.success) problems.push('solved WITHOUT placing anything');
+  if (empty.success && level.id !== 0) problems.push('solved WITHOUT placing anything');
   const solved = run(level, sol, 40, true);
   if (!solved.success) problems.push('reference solution does NOT work');
   // determinism

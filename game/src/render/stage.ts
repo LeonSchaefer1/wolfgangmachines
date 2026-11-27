@@ -79,7 +79,7 @@ export class Stage {
     const b = new Builder();
     const t = 0.34;
     const d = PLANE_Z + 0.5;
-    const col = 0x9a6a44;
+    const col = 0xb08a68;
     b.add('wood', scaleU(rbox(FIELD_W + 2 * t, t, d, 0.06), 5), col, [FIELD_W / 2, -t / 2, d / 2]);
     b.add('wood', scaleU(rbox(FIELD_W + 2 * t, t, d, 0.06), 5, 0.3), col, [FIELD_W / 2, FIELD_H + t / 2, d / 2]);
     b.add('wood', scaleU(rbox(FIELD_H, t, d, 0.06), 3, 0.6), col, [-t / 2, FIELD_H / 2, d / 2], [0, 0, Math.PI / 2]);
@@ -92,7 +92,8 @@ export class Stage {
     ]) {
       b.add('metal', new THREE.CylinderGeometry(0.1, 0.1, 0.04, 14), 0xd8a53c, [x, y, d + 0.01], [Math.PI / 2, 0, 0]);
     }
-    for (const m of b.build(this.scene)) m.receiveShadow = false;
+    // the frame casts no shadow: a dark band along the top and left edge would only hide parts
+    b.build(this.scene, false);
   }
 
   /** fits the camera so that the field exactly covers the given screen rectangle (css px) */

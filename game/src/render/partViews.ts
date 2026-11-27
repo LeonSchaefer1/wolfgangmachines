@@ -137,7 +137,7 @@ function mesh(parent: THREE.Object3D, geo: THREE.BufferGeometry, mat: THREE.Mate
 
 /** brass screw head facing the camera */
 function screw(b: Builder, x: number, y: number, z = DZ / 2) {
-  b.add('metal', cyl(0.055, 0.055, 0.04, 12), 0xd8a53c, [x, y, z], [HP, 0, 0]);
+  b.add('brass', cyl(0.055, 0.055, 0.04, 12), 0xf0c04a, [x, y, z], [HP, 0, 0]);
   b.add('matte', new THREE.BoxGeometry(0.075, 0.014, 0.012), 0x5a3d10, [x, y, z + 0.022], [0, 0, 0.6]);
 }
 
@@ -293,7 +293,7 @@ const MAKERS: Record<string, Make> = {
       speed += ((on ? 26 : 0) - speed) * (1 - Math.exp(-f.dt * 3));
       spin += speed * f.dt;
       rotor.rotation.x = spin;
-      wm.opacity += ((f.running ? (on ? 0.6 : 0) : view.isGhost ? 0 : 0.3) - wm.opacity) * (1 - Math.exp(-f.dt * 6));
+      wm.opacity += ((f.running ? (on ? 0.9 : 0) : view.isGhost ? 0 : 0.38) - wm.opacity) * (1 - Math.exp(-f.dt * 6));
       wind.visible = wm.opacity > 0.01;
       tex.offset.x -= f.dt * (f.running ? 1.6 : 0.35);
     };
@@ -598,8 +598,8 @@ const MAKERS: Record<string, Make> = {
     v.root.add(swing);
     const sb = new Builder();
     const pts = [new THREE.Vector2(0.0, -0.1), new THREE.Vector2(0.09, -0.11), new THREE.Vector2(0.17, -0.18), new THREE.Vector2(0.22, -0.34), new THREE.Vector2(0.25, -0.56), new THREE.Vector2(0.31, -0.72), new THREE.Vector2(0.39, -0.83), new THREE.Vector2(0.41, -0.87)];
-    sb.add('metal', new THREE.LatheGeometry(pts, 26), 0xe9b53a);
-    sb.add('metal', new THREE.TorusGeometry(0.05, 0.02, 6, 12), 0xe9b53a, [0, -0.06, 0]);
+    sb.add('brass', new THREE.LatheGeometry(pts, 26), 0xf5bf3a);
+    sb.add('brass', new THREE.TorusGeometry(0.05, 0.02, 6, 12), 0xf5bf3a, [0, -0.06, 0]);
     sb.add('metal', sph(0.07, 10, 8), 0x8a6a1e, [0, -0.86, 0]);
     sb.build(swing);
     v.anim = (f, view) => {

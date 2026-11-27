@@ -124,6 +124,7 @@ export class Sim {
         linearDamping: spec.linearDamping ?? 0,
         angularDamping: spec.angularDamping ?? 0.05,
         bullet: !!spec.bullet,
+        fixedRotation: !!spec.fixedRotation,
       });
       for (const f of spec.fixtures) {
         const data: FixData = { rt, mat: f.mat, tag: f.tag };

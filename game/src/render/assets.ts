@@ -5,7 +5,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import * as T from './textures';
 
-export type MatKey = 'matte' | 'gloss' | 'metal' | 'wood' | 'woodLight';
+export type MatKey = 'matte' | 'gloss' | 'metal' | 'brass' | 'wood' | 'woodLight';
 
 export interface Assets {
   mats: Record<MatKey, THREE.MeshStandardMaterial>;
@@ -34,7 +34,8 @@ export function getAssets(): Assets {
       matte: std({ vertexColors: true, roughness: 0.86, metalness: 0 }),
       gloss: std({ vertexColors: true, roughness: 0.3, metalness: 0 }),
       metal: std({ vertexColors: true, roughness: 0.3, metalness: 1 }),
-      wood: std({ vertexColors: true, roughness: 0.72, metalness: 0, map: T.plankTexture(24, 55, 42, 3) }),
+      brass: std({ vertexColors: true, roughness: 0.28, metalness: 0.55 }),
+      wood: std({ vertexColors: true, roughness: 0.72, metalness: 0, map: T.plankTexture(25, 46, 40, 3) }),
       woodLight: std({ vertexColors: true, roughness: 0.7, metalness: 0, map: T.plankTexture(34, 58, 60, 8) }),
     },
     wall: T.wallTexture(),

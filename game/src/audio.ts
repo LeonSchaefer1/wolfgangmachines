@@ -69,8 +69,12 @@ class AudioManager {
   private load(name: string): Promise<AudioBuffer | null> {
     let p = this.loading.get(name);
     if (!p) {
-      p = fetch(this.base + name + '.ogg')
-        .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      // the single-file web build carries its sounds inline (base64) instead of as separate files
+      const inline = (window as any).__AUDIO_B64?.[name] as string | undefined;
+      const data: Promise<ArrayBuffer> = inline
+        ? Promise.resolve(Uint8Array.from(atob(inline), (c) => c.charCodeAt(0)).buffer)
+        : fetch(this.base + name + '.ogg').then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))));
+      p = data
         .then((b) => this.ctx!.decodeAudioData(b))
         .then((buf) => {
           this.buffers.set(name, buf);

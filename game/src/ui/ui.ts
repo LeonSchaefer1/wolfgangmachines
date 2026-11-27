@@ -267,7 +267,8 @@ export class UI {
     const r = this.root.getBoundingClientRect();
     const cs = getComputedStyle(this.root);
     const pl = parseFloat(cs.paddingLeft) || 0;
-    const trayW = this.tray.getBoundingClientRect().width || parseFloat(getComputedStyle(document.documentElement).fontSize) * 10.6;
+    // the title screen has no toolbox: the wall is centred there
+    const trayW = this.game.classList.contains('hidden') ? 0 : this.tray.getBoundingClientRect().width || parseFloat(getComputedStyle(document.documentElement).fontSize) * 10.6;
     const pr = parseFloat(cs.paddingRight) || 0;
     return { x: r.left + pl, y: r.top, width: r.width - pl - pr - trayW, height: r.height };
   }

@@ -96,7 +96,6 @@ class Pool {
       this.mesh.instanceMatrix.needsUpdate = true;
       this.mesh.instanceColor!.needsUpdate = true;
     }
-    this.mesh.visible = c > 0;
   }
 
   clear() {

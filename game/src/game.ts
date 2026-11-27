@@ -1,6 +1,6 @@
 // The game controller: level loading, build-mode interaction, running the machine, rewards.
 import { audio, haptic, type Sfx } from './audio';
-import { LEVELS, makeUserPart } from './core/levels';
+import { DEMO, LEVELS, makeUserPart } from './core/levels';
 import { PARTS, halfExtents, partName } from './core/parts';
 import { aabbHalf, clampToField, isFree, settle, snap } from './core/placement';
 import { DT, Sim } from './core/sim';
@@ -102,7 +102,7 @@ export class Game {
     window.addEventListener('pointerup', (e) => this.pointerUp(e));
     window.addEventListener('pointercancel', (e) => this.pointerUp(e, true));
     window.addEventListener('contextmenu', (e) => e.preventDefault());
-    this.buildScene(LEVELS[Math.min(save.lastLevel, LEVELS.length) - 1]);
+    this.startDemo();
     this.ui.showMenu();
     void audio.playMusic('music_menu');
   }
@@ -122,6 +122,14 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- levels
+
+  /** a small machine that runs by itself behind the title screen */
+  private startDemo() {
+    if (this.level !== DEMO || this.views.size === 0) this.buildScene(DEMO);
+    this.sim = new Sim(DEMO.parts, DEMO.goal);
+    for (const v of this.views.values()) v.rt = this.sim.byId.get(v.inst.id) ?? null;
+    this.acc = 0;
+  }
 
   play() {
     const next = highestUnlocked(LEVELS.length);
@@ -193,9 +201,24 @@ export class Game {
       sub: `Maschine ${id} von ${LEVELS.length}`,
       title: level.title,
       text: level.intro,
-      buttons: [{ label: "Los geht's!", kind: 'green', icon: 'play', onClick: () => this.ui.closeDialog() }],
+      buttons: [{ label: "Los geht's!", kind: 'green', icon: 'play', onClick: () => (this.ui.closeDialog(), this.showFocus()) }],
     });
+    // compile all shaders now, so nothing stutters when the machine starts
+    this.stage.renderer.compile(this.stage.scene, this.stage.camera);
     this.coachDirty = true;
+  }
+
+  /** a little sparkle on the things the task is about, so the eye finds them */
+  private showFocus() {
+    (this.level.focus ?? []).forEach((id, i) => {
+      window.setTimeout(() => {
+        const v = this.views.get(id);
+        if (!v || this.mode !== 'build') return;
+        v.pop = 1;
+        this.fx.sparkle(v.inst.x, v.inst.y, 14, 0xffe07a, 3.2);
+        audio.play('star', 0.25, 1.2 + i * 0.15, 0);
+      }, 250 + i * 450);
+    });
   }
 
   // --------------------------------------------------------------- run / stop
@@ -558,9 +581,11 @@ export class Game {
     this.stopSim();
     this.mode = 'menu';
     this.select(null);
+    this.startDemo();
     this.ui.coach(null);
     this.ui.hand(null);
     this.ui.showMenu();
+    this.layout();
     if (levels) this.ui.showLevels();
     void audio.playMusic('music_menu');
   }
@@ -601,6 +626,13 @@ export class Game {
   }
 
   private onEvent(e: SimEvent) {
+    if (this.mode === 'menu') {
+      // the title-screen machine is silent, it only shows its effects
+      if (e.t === 'hit' && e.v > 4) this.fx.dust(e.x, e.y, e.v);
+      else if (e.t === 'button') this.fx.sparkle(e.x, e.y + 0.3, 8, 0xffe07a, 2.5);
+      else if (e.t === 'goal') this.fx.sparkle(DEMO.parts.find((p) => p.kind === 'bucket')!.x, 1.3, 16, 0xffe07a, 4);
+      return;
+    }
     switch (e.t) {
       case 'hit':
         this.hitSound(e.ma, e.mb, e.v);
@@ -734,7 +766,7 @@ export class Game {
     const f = this.frame;
     f.t = now;
     f.dt = dt;
-    f.running = this.mode === 'run' && !!this.sim;
+    f.running = !!this.sim && (this.mode === 'run' || this.mode === 'menu');
     if (f.running && this.sim) {
       this.acc += dt;
       let n = 0;
@@ -747,9 +779,13 @@ export class Game {
       if (this.acc > DT) this.acc = 0;
       f.alpha = this.acc / DT;
       f.simTime = this.sim.time - (1 - f.alpha) * DT;
-      this.runEffects(dt);
-      if (this.wonAt > 0 && !this.winShown && now - this.wonAt > 0.9) this.win();
-      this.guardPerformance(dt);
+      if (this.mode === 'menu') {
+        if (this.sim.time > (this.sim.success ? this.sim.successTime + 3.5 : 16)) this.startDemo();
+      } else {
+        this.runEffects(dt);
+        if (this.wonAt > 0 && !this.winShown && now - this.wonAt > 0.9) this.win();
+        this.guardPerformance(dt);
+      }
     } else {
       f.alpha = 1;
       f.simTime = 0;

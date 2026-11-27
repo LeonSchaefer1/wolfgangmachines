@@ -23,6 +23,7 @@ export interface BodySpec {
   linearDamping?: number;
   angularDamping?: number;
   bullet?: boolean;
+  fixedRotation?: boolean;
 }
 
 export interface PartDef {
@@ -111,7 +112,7 @@ export const PARTS: Record<PartKind, PartDef> = {
   },
   domino: {
     kind: 'domino',
-    name: 'Dominostein',
+    name: 'Domino',
     rotStep: 0,
     hw: DOMINO_W / 2,
     hh: DOMINO_H / 2,
@@ -160,7 +161,7 @@ export const PARTS: Record<PartKind, PartDef> = {
     hh: BALLOON_R * 1.15,
     wind: 1.5,
     bodies: () => [
-      dyn([fx(new Circle(BALLOON_R), 'soft', 0.12, 0.3, 0.3)], { gravityScale: -0.42, linearDamping: 1.5, angularDamping: 3 }),
+      dyn([fx(new Circle(BALLOON_R), 'soft', 0.12, 0.01, 0.3)], { gravityScale: -0.42, linearDamping: 1.5, fixedRotation: true }),
     ],
   },
   cactus: {

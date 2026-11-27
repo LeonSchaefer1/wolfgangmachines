@@ -9,6 +9,7 @@ function boot() {
   const stage = new Stage(canvas, Math.max(0, Math.min(2, save.quality)) as Quality);
   const game = new Game(stage, document.getElementById('app')!);
   (window as any).__game = game;
+  (window as any).__audio = audio;
 
   const relayout = () => game.layout();
   window.addEventListener('resize', relayout);

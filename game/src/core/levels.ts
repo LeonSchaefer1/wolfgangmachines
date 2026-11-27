@@ -239,3 +239,33 @@ export const LEVELS: Level[] = [
     focus: ['rakete'],
   },
 ];
+
+/** A little machine that runs by itself behind the title screen. Not a playable level. */
+export const DEMO: Level = {
+  id: 0,
+  title: 'Schaufenster',
+  task: '',
+  intro: '',
+  hints: [],
+  parts: [
+    fx('rampe', 'plank', 1.6, 1.7, -20),
+    fx('kugel', 'ball', 0.8, 2.45),
+    fx('d1', 'domino', 4.0, 0.45),
+    fx('d2', 'domino', 4.55, 0.45),
+    fx('d3', 'domino', 5.1, 0.45),
+    fx('d4', 'domino', 5.65, 0.45),
+    fx('d5', 'domino', 6.2, 0.45),
+    fx('d6', 'domino', 6.75, 0.45),
+    fx('schalter', 'button', 7.7, 0.2, 0, { targets: ['lampe', 'wind'] }),
+    fx('lampe', 'lamp', 11.0, 4.6),
+    fx('wind', 'fan', 3.1, 5.35),
+    fx('regal', 'plank', 6.0, 4.6, 0, { len: 3.5 }),
+    fx('ball', 'beachball', 5.1, 5.2),
+    fx('eimer', 'bucket', 9.5, 0.55),
+    fx('ballon1', 'balloon', 0.7, 6.2),
+    fx('ballon2', 'balloon', 1.7, 6.2),
+  ],
+  inventory: [],
+  goal: { type: 'inBucket', ball: 'ball', bucket: 'eimer' },
+  solution: [],
+};
