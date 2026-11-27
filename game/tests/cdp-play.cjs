@@ -20,7 +20,15 @@ const out = process.argv[2] || '.';
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const touch = (type, x, y) => send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
   const tap = async (x, y) => { await touch('touchStart', x, y); await sleep(150); await touch('touchEnd', x, y); };
+  // optional: also photograph the real emulator display (EMU_SHOT=1)
+  const { execSync } = require('node:child_process');
+  const display = async (name) => {
+    if (!process.env.EMU_SHOT) return;
+    await sleep(+(process.env.EMU_SHOT_WAIT || 15000));
+    try { execSync(`../scripts/emulator-test.sh shot ${out}/${name}.png`, { stdio: 'ignore', timeout: 90000 }); } catch (e) { console.log('display shot failed', name); }
+  };
   const grab = async (name) => {
+    await display(name.replace('emu-', 'display-'));
     const url = await ev(`(() => { const g = window.__game; g.tick(performance.now() + 100); g.stage.render(); return document.getElementById('stage').toDataURL('image/jpeg', 0.9); })()`);
     fs.writeFileSync(`${out}/${name}.jpg`, Buffer.from(url.split(',')[1], 'base64'));
   };
@@ -61,6 +69,7 @@ const out = process.argv[2] || '.';
   await grab('emu-6-solved');
   const won = await waitFor('win dialog', (s) => s.dialog && s.stars > 0, 60);
   console.log('win', JSON.stringify(won));
+  await display('display-7-win');
   await ev(`(() => { window.__game.paused = true; return 1; })()`);
   ws.close();
 })().catch((e) => { console.log('ERROR', String(e)); process.exit(1); });

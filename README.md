@@ -62,6 +62,8 @@ node scripts/build-single-html.mjs
 
 ## Test im Android-Emulator
 
+Mit Hardware-Beschleunigung (KVM) genügt:
+
 ```bash
 scripts/emulator-test.sh boot
 ```
@@ -70,15 +72,22 @@ scripts/emulator-test.sh boot
 scripts/emulator-test.sh install release/WolfgangsTueftelwerkstatt-debug.apk && scripts/emulator-test.sh launch
 ```
 
-Mit Hardware-Beschleunigung (KVM) läuft das direkt. In einer Umgebung **ohne KVM** (reine CPU-Emulation) gilt:
+**Ohne KVM** (reine CPU-Emulation, so wurde hier getestet) sind drei Dinge nötig:
 
-- Das API-34-Abbild (WebView 113) und das API-35-Abbild (WebView 124) beenden den WebView-Renderer bei **jeder**
-  Webseite: Die Prüfsummen-Selbstprüfung (Adler-32) beim Start der JavaScript-Engine schlägt fehl – vermutlich rechnet die emulierte CPU die SSSE3-Variante falsch. Betroffen ist die
-  Engine selbst, nicht das Spiel. Umgehung nur für den Test: Emulator mit `EMU_EXTRA_ARGS=-writable-system` starten,
-  `adb root && adb remount`, und im WebView-Paket des Emulators den einen Sprungbefehl dieser Prüfung durch NOPs ersetzen.
-- Die Bildschirmausgabe des Emulators bleibt dort schwarz (auch System-Overlays). Getestet wird deshalb über die
-  DevTools-Schnittstelle des Debug-APK: `scripts/emulator-test.sh devtools`, dann `node game/tests/cdp-play.cjs <ordner>`
-  (schickt echte Touch-Ereignisse in den WebView, spielt Level 1 durch und speichert Bilder aus dem Spiel).
-  Ergebnis des letzten Laufs: `docs/emulator-test-level1.png`.
-- Ohne Grafikchip schaltet das Spiel automatisch in einen sparsamen Modus (kleine Auflösung, keine Schatten).
-  Auf einem echten Telefon ist dieser Modus nie aktiv.
+1. **Normales Abbild statt „ATD"** – die ATD-Abbilder zeichnen nichts auf das Display (Bildschirmfotos bleiben schwarz):
+   `EMU_AVD_NAME=wolfgang34d EMU_SYSTEM_IMAGE="system-images;android-34;default;x86_64" EMU_GPU=swangle_indirect EMU_EXTRA_ARGS=-writable-system scripts/emulator-test.sh boot`
+   (mit `swiftshader_indirect` blieb der WebView-Inhalt auf dem Display schwarz, mit `swangle_indirect` erscheint er).
+2. **WebView-Korrektur nur im Emulator:** Der System-WebView (113 auf API 34, 124 auf API 35) beendet dort seinen Renderer bei
+   *jeder* Webseite, weil die Prüfsummen-Selbstprüfung beim Start der JavaScript-Engine fehlschlägt (vermutlich rechnet die
+   emulierte CPU die SSSE3-Variante von Adler-32 falsch). `scripts/emulator-webview-fix.sh 191356a` (API 34) ersetzt den
+   einen Sprungbefehl dieser Prüfung in einer Kopie des Emulator-WebViews. Das Skript fasst die von Hand ausgeführten
+   Schritte zusammen; als Skript wurde es noch nicht erneut durchlaufen. App und APK bleiben unverändert.
+3. **Eingaben über DevTools:** Ein Bild braucht 1–5 Sekunden, deshalb beendet Android die App bei `adb shell input tap`
+   mit „reagiert nicht". `scripts/emulator-test.sh devtools`, dann
+   `cd game && EMU_SHOT=1 node tests/cdp-play.cjs <ordner>` schickt Touch-Ereignisse direkt in den WebView, spielt Level 1
+   durch und fotografiert nach jedem Schritt das Emulator-Display.
+
+Ergebnis des letzten Laufs (Android 14, WebView 113): `docs/emulator-display-title.png` und
+`docs/emulator-display-level1.png` (Display-Fotos), `docs/emulator-test-level1.png` (Bilder aus dem Spiel, Android 15).
+Ohne Grafikchip schaltet das Spiel automatisch in einen sparsamen Modus (kleine Auflösung, keine Schatten);
+auf einem echten Telefon ist dieser Modus nie aktiv.
