@@ -69,8 +69,8 @@ scripts/emulator-test.sh install release/WolfgangsTueftelwerkstatt-debug.apk && 
 Mit Hardware-Beschleunigung (KVM) läuft das direkt. In einer Umgebung **ohne KVM** (reine CPU-Emulation) gilt:
 
 - Das API-34-Abbild (WebView 113) und das API-35-Abbild (WebView 124) beenden den WebView-Renderer bei **jeder**
-  Webseite: Die emulierte CPU berechnet die SSSE3-Adler-32-Prüfsumme falsch, worauf die Start-Selbstprüfung der
-  JavaScript-Engine fehlschlägt. Umgehung nur für den Test: Emulator mit `EMU_EXTRA_ARGS=-writable-system` starten,
+  Webseite: Die Prüfsummen-Selbstprüfung (Adler-32) beim Start der JavaScript-Engine schlägt fehl – vermutlich rechnet die emulierte CPU die SSSE3-Variante falsch. Betroffen ist die
+  Engine selbst, nicht das Spiel. Umgehung nur für den Test: Emulator mit `EMU_EXTRA_ARGS=-writable-system` starten,
   `adb root && adb remount`, und im WebView-Paket des Emulators den einen Sprungbefehl dieser Prüfung durch NOPs ersetzen.
 - Die Bildschirmausgabe des Emulators bleibt dort schwarz (auch System-Overlays). Getestet wird deshalb über die
   DevTools-Schnittstelle des Debug-APK: `scripts/emulator-test.sh devtools`, dann `node game/tests/cdp-play.cjs <ordner>`
