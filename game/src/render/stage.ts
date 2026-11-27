@@ -124,12 +124,12 @@ export class Stage {
 
   applyQuality() {
     const dpr = window.devicePixelRatio || 1;
-    const cap = this.quality === 2 ? 2 : this.quality === 1 ? 1.5 : 1.1;
+    const cap = this.quality === 2 ? 2 : this.quality === 1 ? 1.5 : 1.25;
     this.renderer.setPixelRatio(Math.min(dpr, cap));
     this.renderer.setSize(this.vw, this.vh, false);
     const size = this.quality === 2 ? 2048 : 1024;
     this.renderer.shadowMap.enabled = true;
-    this.sun.castShadow = this.quality > 0 || true;
+    this.sun.castShadow = this.quality > 0;
     if (this.sun.shadow.mapSize.x !== size) {
       this.sun.shadow.mapSize.set(size, size);
       this.sun.shadow.map?.dispose();
