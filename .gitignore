@@ -4,3 +4,7 @@ game/tests/out/
 *.log
 .DS_Store
 __pycache__/
+# release/: only the installable APK and the single-file web build are kept
+release/*
+!release/WolfgangsTueftelwerkstatt.apk
+!release/web/
