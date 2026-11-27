@@ -358,7 +358,7 @@ export class UI {
   dialog(opts: { sub?: string; title: string; text?: string; stars?: number; buttons: DialogButton[]; column?: boolean; extra?: HTMLElement; light?: boolean; fieldOnly?: boolean }) {
     this.closeDialog();
     const ov = el('div', 'overlay' + (opts.light ? ' light' : ''));
-    if (opts.fieldOnly) ov.style.right = 'calc(var(--tray-w) + env(safe-area-inset-right, 0px))';
+    if (opts.fieldOnly) ov.style.right = 'calc(var(--tray-w) + var(--inset-r))';
     const card = el('div', 'card');
     if (opts.sub) card.append(el('div', 'sub', opts.sub));
     if (opts.stars !== undefined) {

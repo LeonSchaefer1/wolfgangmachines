@@ -15,6 +15,9 @@
   --blue: #2f7fd6;
   --blue-d: #1c559a;
   --tray-w: 10.6rem;
+  /* display cut-out (camera hole): from CSS env() or, as a fallback, reported by the Android shell */
+  --inset-l: max(env(safe-area-inset-left, 0px), var(--cut-l, 0px));
+  --inset-r: max(env(safe-area-inset-right, 0px), var(--cut-r, 0px));
   font-size: clamp(13px, 3.893vh, 34px);
 }
 * {
@@ -47,8 +50,8 @@ body {
 #app {
   position: fixed;
   inset: 0;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: var(--inset-l);
+  padding-right: var(--inset-r);
   pointer-events: none;
 }
 #app > * {
@@ -171,7 +174,7 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  right: env(safe-area-inset-right, 0px);
+  right: var(--inset-r);
   width: var(--tray-w);
   padding: 0.4rem 0.45rem 0.55rem 0.5rem;
   display: flex;

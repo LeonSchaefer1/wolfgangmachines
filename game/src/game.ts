@@ -76,6 +76,11 @@ export class Game {
   private fanOn = false;
   private beltOn = false;
   paused = false;
+  /** render at full rate until this time (seconds): keeps short animations smooth in the otherwise throttled build mode */
+  private busyUntil = 0;
+  private idleSince = 0;
+  /** the 'pull a part out of the box' hand is showing */
+  private nudging = false;
   /** bumped whenever the tutorial hints need to be re-evaluated */
   private coachDirty = true;
   private frame: Frame = { t: 0, dt: 0, alpha: 1, running: false, simTime: 0 };
@@ -206,10 +211,13 @@ export class Game {
     // compile all shaders now, so nothing stutters when the machine starts
     this.stage.renderer.compile(this.stage.scene, this.stage.camera);
     this.coachDirty = true;
+    this.idleSince = this.frame.t;
+    this.nudging = false;
   }
 
   /** a little sparkle on the things the task is about, so the eye finds them */
   private showFocus() {
+    this.poke();
     (this.level.focus ?? []).forEach((id, i) => {
       window.setTimeout(() => {
         const v = this.views.get(id);
@@ -261,6 +269,7 @@ export class Game {
     this.ui.toast('');
     this.ui.closeDialog();
     for (const g of this.ghosts) g.root.visible = true;
+    this.poke();
     audio.play('ui_stop', 0.7);
     if (this.fails >= 2 && !this.solutionShown) this.ui.pulseHint(true);
     this.coachDirty = true;
@@ -344,7 +353,17 @@ export class Game {
     return [...this.level.parts, ...this.placed];
   }
 
+  private poke() {
+    this.busyUntil = this.frame.t + 1.2;
+    this.idleSince = this.frame.t;
+    if (this.nudging) {
+      this.nudging = false;
+      this.coachDirty = true;
+    }
+  }
+
   private select(inst: PartInst | null) {
+    this.poke();
     if (this.selected) {
       const v = this.views.get(this.selected.id);
       if (v) v.selected = false;
@@ -478,6 +497,7 @@ export class Game {
     const d = this.drag;
     if (!d || e.pointerId !== d.pointerId) return;
     this.drag = null;
+    this.poke();
     d.view.liftTarget = 0;
     d.view.invalid = false;
     this.ui.setDropTarget(false);
@@ -552,6 +572,7 @@ export class Game {
       this.ui.toast('So herum passt es hier nicht hin.', 2200);
       return;
     }
+    this.poke();
     audio.play('ui_rotate', 0.8);
     haptic(8);
   }
@@ -755,7 +776,7 @@ export class Game {
       return false;
     }
     // cap at 60 fps on 120 Hz screens; idle build mode runs at 30 fps to keep the phone cool
-    const idle = this.mode !== 'run' && !this.drag && !this.fx.busy && this.mode !== 'menu';
+    const idle = this.mode !== 'run' && !this.drag && !this.fx.busy && this.mode !== 'menu' && now > this.busyUntil;
     const minGap = idle ? 0.03 : 0.0155;
     if (now - this.lastRender < minGap) return false;
     this.lastRender = now;
@@ -875,6 +896,11 @@ export class Game {
       this.ui.showActions(x, y, def.flips ? 'flip' : def.rotStep ? 'rotate' : 'none');
     } else this.ui.showActions(0, 0, null);
 
+    // nobody touched anything for a while and the wall is still empty: show where the parts are
+    if (!this.nudging && this.mode === 'build' && this.placed.length === 0 && !this.ui.dialogOpen && !this.drag && this.level.id !== 1 && this.frame.t - this.idleSince > 12) {
+      this.nudging = true;
+      this.coachDirty = true;
+    }
     if (this.coachDirty) {
       this.coachDirty = false;
       this.updateCoach();
@@ -885,6 +911,12 @@ export class Game {
   private updateCoach() {
     const ui = this.ui;
     const tutorial = this.level.id === 1 && !save.stars[1] && this.mode !== 'menu';
+    if (this.nudging && !tutorial && this.mode === 'build' && !ui.dialogOpen && !this.drag) {
+      const to = this.stage.toScreen(FIELD_W / 2, FIELD_H / 2);
+      ui.hand(ui.slotCenter(0), to);
+      ui.coach('Ziehe ein Teil aus der Kiste auf die Wand', to.x, to.y - 34, 'above');
+      return;
+    }
     if (!tutorial || ui.dialogOpen || this.drag?.moved) {
       ui.coach(null);
       ui.hand(null);

@@ -31,6 +31,12 @@ function boot() {
   (window as any).onAppPause = () => setPaused(true);
   (window as any).onAppResume = () => setPaused(document.hidden);
   (window as any).onAndroidBack = () => game.back();
+  // the Android shell reports the camera cut-out (css px) in case the WebView does not expose env(safe-area-inset-*)
+  (window as any).__setInsets = (left: number, right: number) => {
+    document.documentElement.style.setProperty('--cut-l', Math.max(0, left) + 'px');
+    document.documentElement.style.setProperty('--cut-r', Math.max(0, right) + 'px');
+    relayout();
+  };
 
   canvas.addEventListener('webglcontextlost', (e) => e.preventDefault());
   canvas.addEventListener('webglcontextrestored', () => location.reload());
