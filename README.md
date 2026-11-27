@@ -55,6 +55,10 @@ node scripts/build-single-html.mjs
 - Fester Physik-Takt (60 Hz, zwei Teilschritte), Darstellung auf 60 Bilder/s begrenzt, im Bau-Modus 30 Bilder/s (schont Akku).
 - Wenige Materialien, zusammengefasste Geometrie, eine Schattenlichtquelle.
 - Automatische Qualitätsanpassung: hält das Gerät die Bildrate nicht, werden Auflösung und Schatten stufenweise reduziert.
+- Gemessene Last pro Bild (`node game/tests/drive.cjs game/tests/s-perf.cjs`, alle zehn Level mit laufender Lösung,
+  CPU vierfach gedrosselt): höchstens 40 Zeichenaufrufe und 12 400 Dreiecke (inklusive Schattendurchgang),
+  16 Shader-Programme, 14 Texturen; Physik unter 0,5 ms und Szenen-Update unter 0,1 ms pro Takt.
+  Die GPU-Zeit lässt sich ohne echtes Gerät nicht messen.
 
 ## Test im Android-Emulator
 

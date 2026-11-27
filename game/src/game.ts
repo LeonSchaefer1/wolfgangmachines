@@ -78,6 +78,8 @@ export class Game {
   paused = false;
   /** render at full rate until this time (seconds): keeps short animations smooth in the otherwise throttled build mode */
   private busyUntil = 0;
+  /** software rendering only: pause between frames so the rest of the system gets CPU time */
+  private restUntil = 0;
   private idleSince = 0;
   /** the 'pull a part out of the box' hand is showing */
   private nudging = false;
@@ -778,7 +780,7 @@ export class Game {
     // cap at 60 fps on 120 Hz screens; idle build mode runs at 30 fps to keep the phone cool
     const idle = this.mode !== 'run' && !this.drag && !this.fx.busy && this.mode !== 'menu' && now > this.busyUntil;
     const minGap = idle ? 0.03 : 0.0155;
-    if (now - this.lastRender < minGap) return false;
+    if (now - this.lastRender < minGap || now < this.restUntil) return false;
     this.lastRender = now;
     let dt = now - this.last;
     this.last = now;
@@ -828,6 +830,7 @@ export class Game {
     this.updateOverlay();
     this.stage.shadowsDirty = true;
     this.stage.render();
+    if (this.stage.safe) this.restUntil = now + Math.min(2, (performance.now() - nowMs) / 1000);
     return true;
   }
 
