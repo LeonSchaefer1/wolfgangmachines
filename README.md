@@ -60,6 +60,15 @@ node scripts/build-single-html.mjs
   16 Shader-Programme, 14 Texturen; Physik unter 0,5 ms und Szenen-Update unter 0,1 ms pro Takt.
   Die GPU-Zeit lässt sich ohne echtes Gerät nicht messen.
 
+## Online-Emulator (im Browser bedienen)
+
+GitHub → Actions → **Online-Emulator** → „Run workflow". Nach etwa drei Minuten steht in der Zusammenfassung des Laufs
+ein Link, über den sich ein Android-14-Emulator mit dem Spiel im Browser bedienen lässt (noVNC über einen temporären
+Cloudflare-Tunnel, kein Konto nötig). Der Link ist zufällig, aber öffentlich: Wer ihn kennt, kann den Emulator steuern,
+solange der Lauf aktiv ist (Standard 30 Minuten, höchstens 90). Der Emulator dort hat keinen Grafikchip, das Spiel
+läuft deshalb im sparsamen Grafikmodus – für die Bedienung taugt er, für die Bildrate des A54 sagt er nichts aus.
+`node game/tests/online-check.cjs <link> <ordner>` öffnet den Link wie ein Besucher und klickt auf „Spielen".
+
 ## Test im Android-Emulator
 
 **Empfohlen: GitHub Actions** (`.github/workflows/android.yml`). Bei jedem Push prüft der Lauf alle Level, baut die
