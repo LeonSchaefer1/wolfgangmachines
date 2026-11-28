@@ -9,6 +9,9 @@ export DISPLAY=:99
 SDK="${ANDROID_HOME:?ANDROID_HOME not set}"
 export PATH="$SDK/platform-tools:$SDK/emulator:$SDK/cmdline-tools/latest/bin:$PATH"
 AVD=wolfgang-online
+# pin the AVD location: runners differ in where avdmanager puts it by default
+export ANDROID_AVD_HOME="$HOME/.android/avd"
+mkdir -p "$ANDROID_AVD_HOME"
 PKG=de.wolfgang.tueftelwerkstatt
 APK=release/WolfgangsTueftelwerkstatt.apk
 OUT=online-emulator
@@ -20,7 +23,7 @@ case "${1:-}" in
     sleep 2
     openbox > /dev/null 2>&1 &
     echo no | avdmanager create avd --force -n "$AVD" -k "system-images;android-34;default;x86_64" > /dev/null
-    CFG="$HOME/.android/avd/$AVD.avd/config.ini"
+    CFG="$ANDROID_AVD_HOME/$AVD.avd/config.ini"
     # Galaxy-A54-like screen, shown lying on its side so the landscape game is upright
     sed -i -E '/^(hw\.lcd\.(width|height|density)|hw\.initialOrientation|hw\.ramSize|hw\.keyboard|hw\.gpu\.(enabled|mode)|showDeviceFrame)[ =]/d' "$CFG"
     cat >> "$CFG" <<CONF
