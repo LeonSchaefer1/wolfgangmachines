@@ -19,7 +19,7 @@ mkdir -p "$OUT"
 
 case "${1:-}" in
   start)
-    Xvfb :99 -screen 0 1500x760x24 -nolisten tcp > /dev/null 2>&1 &
+    Xvfb :99 -screen 0 1280x640x24 -nolisten tcp > /dev/null 2>&1 &
     sleep 2
     openbox > /dev/null 2>&1 &
     echo no | avdmanager create avd --force -n "$AVD" -k "system-images;android-34;default;x86_64" > /dev/null
@@ -54,7 +54,21 @@ CONF
     adb shell svc power stayon true || true
     adb install -r "$APK"
     adb shell am start -W -n "$PKG/.MainActivity"
-    sleep 20
+    sleep 8
+    # tidy up what visitors see: close the emulator's info dialog, turn the phone on its side, enlarge the window
+    for _ in 1 2 3; do
+      xdotool search --name "Nested Virtualization" windowclose 2>/dev/null || true
+      sleep 1
+    done
+    adb emu rotate || true
+    sleep 4
+    WIN="$(xdotool search --name "Android Emulator - " 2>/dev/null | head -1 || true)"
+    if [[ -n "$WIN" ]]; then
+      xdotool windowmove "$WIN" 0 0 windowsize "$WIN" 1200 560 || true
+      sleep 2
+      xdotool getwindowgeometry "$WIN" || true
+    fi
+    sleep 8
     adb exec-out screencap -p > "$OUT/device-screen.png" || true
     ;;
   link)
