@@ -39,12 +39,16 @@ showDeviceFrame=no
 CONF
     nohup emulator -avd "$AVD" -no-snapshot -noaudio -no-boot-anim -no-metrics -gpu swiftshader_indirect \
       -camera-back none -camera-front none > "$OUT/emulator.log" 2>&1 &
-    adb wait-for-device
-    for _ in $(seq 1 120); do
-      [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] && break
+    fail() { echo "--- emulator.log ---"; tail -n 60 "$OUT/emulator.log" || true; echo "$1" >&2; exit 1; }
+    timeout 150 adb wait-for-device || fail "emulator never showed up in adb"
+    BOOTED=0
+    for _ in $(seq 1 100); do
+      pgrep -f qemu-system > /dev/null || fail "emulator process died"
+      if [[ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then BOOTED=1; break; fi
       sleep 3
     done
-    [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == "1" ]] || { tail -n 40 "$OUT/emulator.log"; echo "emulator did not boot" >&2; exit 1; }
+    (( BOOTED == 1 )) || fail "emulator did not finish booting"
+    echo "emulator booted"; grep -iE "gles|graphics adapter|accel|kvm" "$OUT/emulator.log" | head -8 || true
     adb shell settings put secure immersive_mode_confirmations confirmed
     adb shell settings put system screen_off_timeout 2147483647
     adb shell svc power stayon true || true
